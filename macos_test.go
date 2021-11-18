@@ -4,10 +4,7 @@ package keychain
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"testing"
-	"time"
 )
 
 func TestUpdateItem(t *testing.T) {
@@ -45,135 +42,6 @@ func TestUpdateItem(t *testing.T) {
 	}
 	if string(data2) != "toomanysecrets3" {
 		t.Fatal("TestUpdateItem: updated password does not match")
-	}
-}
-
-func TestAddingAndQueryingNewKeychain(t *testing.T) {
-	keychainPath := tempPath(t)
-	defer func() { _ = os.Remove(keychainPath) }()
-
-	service, account, label, accessGroup, password := "TestAddingAndQueryingNewKeychain", "test", "", "", "toomanysecrets"
-
-	k, err := NewKeychain(keychainPath, "my password")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	item := NewGenericPassword(service, account, label, []byte(password), accessGroup)
-	item.UseKeychain(k)
-	if err = AddItem(item); err != nil {
-		t.Fatal(err)
-	}
-
-	query := NewItem()
-	query.SetSecClass(SecClassGenericPassword)
-	query.SetMatchSearchList(k)
-	query.SetService(service)
-	query.SetAccount(account)
-	query.SetLabel(label)
-	query.SetAccessGroup(accessGroup)
-	query.SetMatchLimit(MatchLimitOne)
-	query.SetReturnData(true)
-
-	results, err := QueryItem(query)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(results) != 1 {
-		t.Fatalf("Expected 1 result, got %d", len(results))
-	} else if string(results[0].Data) != password {
-		t.Fatalf("Expected password to be %s, got %s", password, results[0].Data)
-	}
-
-	// Search default keychain to make sure it's not there
-	queryDefault := NewItem()
-	queryDefault.SetSecClass(SecClassGenericPassword)
-	queryDefault.SetService(service)
-	queryDefault.SetMatchLimit(MatchLimitOne)
-	queryDefault.SetReturnData(true)
-	resultsDefault, err := QueryItem(queryDefault)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(resultsDefault) != 0 {
-		t.Fatalf("Expected no results")
-	}
-}
-
-func tempPath(t *testing.T) string {
-	temp, err := RandomID("go-keychain-test-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return filepath.Join(os.TempDir(), temp+".keychain")
-}
-
-func TestNewWithPath(t *testing.T) {
-	path := tempPath(t)
-	defer func() { _ = os.Remove(path) }()
-	kc, newErr := NewKeychain(path, "testkeychainpassword")
-	if newErr != nil {
-		t.Fatal(newErr)
-	}
-
-	item := NewGenericPassword("MyService2", "gabriel2", "", []byte("toomanysecrets2"), "")
-	item.UseKeychain(kc)
-	if err := AddItem(item); err != nil {
-		t.Fatal(err)
-	}
-
-	kc2 := NewWithPath(path)
-
-	if lockErr := LockAtPath(path); lockErr != nil {
-		t.Fatal(lockErr)
-	}
-
-	if unlockErr := UnlockAtPath(path, "testkeychainpassword"); unlockErr != nil {
-		t.Fatal(unlockErr)
-	}
-
-	query := NewItem()
-	query.SetMatchSearchList(kc2)
-	query.SetService("MyService2")
-	query.SetAccount("gabriel2")
-	query.SetSecClass(SecClassGenericPassword)
-	query.SetMatchLimit(MatchLimitOne)
-	query.SetReturnAttributes(true)
-	query.SetReturnData(true)
-	results, err := QueryItem(query)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(results) != 1 {
-		t.Fatalf("Should have 1 result, had %d", len(results))
-	}
-	if string(results[0].Data) != "toomanysecrets2" {
-		t.Fatalf("Invalid password: %s", results[0].Data)
-	}
-	if results[0].CreationDate.Equal(time.Time{}) {
-		t.Fatal("Got null creation date")
-	}
-	if results[0].ModificationDate.Equal(time.Time{}) {
-		t.Fatal("Got null creation date")
-	}
-}
-
-func TestStatus(t *testing.T) {
-	path := tempPath(t)
-	defer func() { _ = os.Remove(path) }()
-	k, newErr := NewKeychain(path, "testkeychainpassword")
-	if newErr != nil {
-		t.Fatal(newErr)
-	}
-
-	if err := k.Status(); err != nil {
-		t.Fatal(err)
-	}
-
-	nonexistent := NewWithPath(fmt.Sprintf("this_shouldnt_exist_%s", time.Now()))
-	if err := nonexistent.Status(); err != ErrorNoSuchKeychain {
-		t.Fatalf("Expected %v, get %v", ErrorNoSuchKeychain, err)
 	}
 }
 
