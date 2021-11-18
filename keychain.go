@@ -166,6 +166,8 @@ var (
 	CreationDateKey = attrKey(C.CFTypeRef(C.kSecAttrCreationDate))
 	// ModificationDateKey is for kSecAttrModificationDate
 	ModificationDateKey = attrKey(C.CFTypeRef(C.kSecAttrModificationDate))
+	// UseDataProtectionKeychain is for kSecUseDataProtectionKeychain
+	UseDataProtectionKeychainKey = attrKey(C.CFTypeRef(C.kSecUseDataProtectionKeychain))
 )
 
 // Synchronizable is the items synchronizable status
@@ -334,6 +336,11 @@ func (k *Item) SetReturnData(b bool) {
 // SetReturnRef enables returning references on query
 func (k *Item) SetReturnRef(b bool) {
 	k.attr[ReturnRefKey] = b
+}
+
+// SetUseDataProtectionKeychain indicates whether to treat macOS keychain items like iOS keychain items.
+func (k *Item) SetUseDataProtectionKeychain(b bool) {
+	k.attr[UseDataProtectionKeychainKey] = b
 }
 
 // NewItem is a new empty keychain item
